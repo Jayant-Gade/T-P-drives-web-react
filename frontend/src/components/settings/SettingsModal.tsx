@@ -9,9 +9,17 @@ export const SettingsModal: React.FC = () => {
   if (!isSettingsOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 lg:p-8 animate-fade-in">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) setIsSettingsOpen(false);
+      }}
+      className="fixed inset-0 z-[110] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 lg:p-8 animate-fade-in cursor-pointer"
+    >
       {/* Near Full Screen Hover Panel */}
-      <div className="w-full h-full max-w-6xl max-h-[92vh] bg-slate-950/95 border border-slate-700/80 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-scale-in">
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full h-full max-w-6xl max-h-[92vh] bg-slate-950/95 border border-slate-700/80 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-scale-in cursor-default"
+      >
         
         {/* Modal Header */}
         <div className="flex items-center justify-between px-8 py-5 border-b border-slate-800 bg-slate-900/60">

@@ -9,7 +9,7 @@ export const AppLayout: React.FC = () => {
       <Navbar />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-screen w-full mx-auto p-6 sm:p-8 animate-fade-in">
+      <main className="flex-1 max-w-screen w-full mx-auto p-6 sm:p-8">
         <Outlet />
       </main>
     </div>

@@ -123,21 +123,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Connect to Backend REST API or Load Static Demo Data
   const refreshData = useCallback(async () => {
     setIsLoading(true);
-    const isOnline = await checkBackendHealth();
-    setIsBackendConnected(isOnline);
 
     if (uiSettings.isDemoMode) {
-      // Demo Mode: Load static mock data
+      // Demo Mode: Load static mock data exclusively
       setDatasets(INITIAL_DATASETS);
       setStudents(INITIAL_STUDENTS);
       setDrives(INITIAL_DRIVES);
       setEligibilityRecords(INITIAL_ELIGIBILITY_RECORDS);
       setActiveDatasetId((prev) => {
         if (prev && INITIAL_DATASETS.some((d) => d.id === prev)) return prev;
-        return INITIAL_DATASETS[0].id;
+        return INITIAL_DATASETS[0]?.id || '';
       });
-    } else if (isOnline) {
-      // Backend API Mode: Fetch real data from MongoDB API
+      setIsLoading(false);
+      return;
+    }
+
+    // Backend API Mode: CLEAR ALL STATIC MOCK DATA FIRST
+    setDatasets([]);
+    setStudents([]);
+    setDrives([]);
+    setEligibilityRecords([]);
+
+    const isOnline = await checkBackendHealth();
+    setIsBackendConnected(isOnline);
+
+    if (isOnline) {
       try {
         const [apiDs, apiDrs] = await Promise.all([
           apiFetchDatasets(),
@@ -161,20 +171,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } else {
           setDatasets([]);
           setStudents([]);
+          setActiveDatasetId('');
         }
 
         setDrives(apiDrs);
       } catch (err) {
         console.warn('Backend API sync error:', err);
+        setDatasets([]);
+        setStudents([]);
+        setDrives([]);
       }
     } else {
-      // Offline & Demo mode fallback
-      setDatasets(INITIAL_DATASETS);
-      setStudents(INITIAL_STUDENTS);
-      setDrives(INITIAL_DRIVES);
-      setEligibilityRecords(INITIAL_ELIGIBILITY_RECORDS);
-      setActiveDatasetId(INITIAL_DATASETS[0].id);
+      // Offline in API Mode: Keep arrays empty, do NOT fallback to static demo data
+      setDatasets([]);
+      setStudents([]);
+      setDrives([]);
+      setEligibilityRecords([]);
+      setActiveDatasetId('');
     }
+
     setIsLoading(false);
   }, [uiSettings.isDemoMode]);
 
@@ -187,7 +202,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!uiSettings.isDemoMode && isBackendConnected && activeDatasetId) {
       apiFetchStudents(activeDatasetId)
         .then((stdList) => setStudents(stdList))
-        .catch((err) => console.warn('Students fetch error:', err));
+        .catch((err) => {
+          console.warn('Students fetch error:', err);
+          setStudents([]);
+        });
     }
   }, [activeDatasetId, isBackendConnected, uiSettings.isDemoMode]);
 
@@ -201,25 +219,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const activeDataset = datasets.find((d) => d.id === activeDatasetId);
 
-  const getStudentsByDataset = (datasetId: string) => {
-    return students.filter((s) => s.datasetId === datasetId);
-  };
+  const getStudentsByDataset = useCallback(
+    (datasetId: string) => {
+      return students.filter((s) => s.datasetId === datasetId);
+    },
+    [students]
+  );
 
-  const getDrivesByDataset = (datasetId: string) => {
-    return drives.filter((d) => d.datasetId === datasetId);
-  };
+  const getDrivesByDataset = useCallback(
+    (datasetId: string) => {
+      return drives.filter((d) => d.datasetId === datasetId);
+    },
+    [drives]
+  );
 
-  const evaluateDriveEligibilityPreview = async (datasetId: string, ast: FilterAST): Promise<Student[]> => {
-    if (!uiSettings.isDemoMode && isBackendConnected) {
-      try {
-        return await apiPreviewEligibility(datasetId, ast);
-      } catch (err) {
-        console.warn('API eligibility preview error:', err);
+  const evaluateDriveEligibilityPreview = useCallback(
+    async (datasetId: string, ast: FilterAST): Promise<Student[]> => {
+      if (!uiSettings.isDemoMode && isBackendConnected) {
+        try {
+          return await apiPreviewEligibility(datasetId, ast);
+        } catch (err) {
+          console.warn('API eligibility preview error:', err);
+          return [];
+        }
       }
-    }
-    const datasetStudents = getStudentsByDataset(datasetId);
-    return filterStudents(datasetStudents, ast);
-  };
+      const datasetStudents = getStudentsByDataset(datasetId);
+      return filterStudents(datasetStudents, ast);
+    },
+    [uiSettings.isDemoMode, isBackendConnected, getStudentsByDataset]
+  );
 
   const addDatasetWithStudents = async (
     datasetName: string,
@@ -289,27 +317,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const getStudentDriveHistory = (studentId: string) => {
-    if (!uiSettings.isDemoMode && isBackendConnected) {
-      return apiFetchStudentDriveHistory(studentId);
-    }
-    const studentRecords = eligibilityRecords.filter((er) => er.studentId === studentId);
-    return studentRecords
-      .map((er) => {
-        const drive = drives.find((d) => d.id === er.driveId);
-        return drive ? { drive, eligibilityRecord: er } : null;
-      })
-      .filter((item): item is { drive: PlacementDrive; eligibilityRecord: EligibilityRecord } => item !== null);
-  };
+  const getStudentDriveHistory = useCallback(
+    (studentId: string) => {
+      if (!uiSettings.isDemoMode && isBackendConnected) {
+        return apiFetchStudentDriveHistory(studentId);
+      }
+      if (uiSettings.isDemoMode) {
+        const studentRecords = eligibilityRecords.filter((er) => er.studentId === studentId);
+        return studentRecords
+          .map((er) => {
+            const drive = drives.find((d) => d.id === er.driveId);
+            return drive ? { drive, eligibilityRecord: er } : null;
+          })
+          .filter((item): item is { drive: PlacementDrive; eligibilityRecord: EligibilityRecord } => item !== null);
+      }
+      return [];
+    },
+    [uiSettings.isDemoMode, isBackendConnected, eligibilityRecords, drives]
+  );
 
-  const getEligibleStudentsForDrive = (driveId: string) => {
-    if (!uiSettings.isDemoMode && isBackendConnected) {
-      return apiFetchEligibleStudentsForDrive(driveId);
-    }
-    const driveRecords = eligibilityRecords.filter((er) => er.driveId === driveId);
-    const eligibleStudentIds = new Set(driveRecords.map((er) => er.studentId));
-    return students.filter((s) => eligibleStudentIds.has(s.id));
-  };
+  const getEligibleStudentsForDrive = useCallback(
+    (driveId: string) => {
+      if (!uiSettings.isDemoMode && isBackendConnected) {
+        return apiFetchEligibleStudentsForDrive(driveId);
+      }
+      if (uiSettings.isDemoMode) {
+        const driveRecords = eligibilityRecords.filter((er) => er.driveId === driveId);
+        const eligibleStudentIds = new Set(driveRecords.map((er) => er.studentId));
+        return students.filter((s) => eligibleStudentIds.has(s.id));
+      }
+      return [];
+    },
+    [uiSettings.isDemoMode, isBackendConnected, eligibilityRecords, students]
+  );
 
   return (
     <AppContext.Provider

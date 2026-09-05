@@ -4,6 +4,8 @@
 This document tracks agents, system modules, and execution status for the T&P Cell Placement Management System.
 
 ## Active Modules & Agents
+- **Modal Overlay & Interaction Agent**: Enforced click-outside-to-close backdrop behavior (`onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}`) with event propagation stops across all modals (`SettingsModal`, `CsvUploadModal`, `StudentsPage` drive history modal, `DrivesPage` drive inspector modal). Lowered `CsvUploadModal` vertical positioning (`pt-16 sm:pt-20 mt-2 sm:mt-4`) below top Navbar height while floating above all UI elements with high z-index (`z-[100]`).
+- **CSV Column Mapping Agent**: Built interactive **Column Mapping & Header Verification Window** step in Datasets page (`DatasetsPage.tsx`). Automatically detects CSV headers, auto-assigns target schema fields using smart Regex matching (`/roll|reg/i`, `/cgpa|pointer/i`, etc.), displays manual dropdown selectors with live sample value previews, and parses custom-ordered CSV files for MongoDB import.
 - **Git Repository Agent**: Initialized Git repository in root `d:\Projects\tandpecell`, connected remote origin `https://github.com/Jayant-Gade/T-P-drives-web-react.git`, and pulled remote `main` branch.
 - **Demo Mode Agent**: Built interactive Demo Mode toggle in UI Settings (`SettingsModal.tsx`) and persistent top Navbar indicator button (`Navbar.tsx`). Allows seamless 1-click switching between live Node.js MongoDB Backend API Mode and standalone Static Mock Data Mode (`mockData.ts`), immediately re-syncing datasets, students, and drive records on toggle on/off.
 - **Full-Stack Dynamic Backend Data Agent**: Verified 100% dynamic data fetching from Node.js Express REST API (`/api/datasets`, `/api/students`, `/api/drives`, `/api/eligibility`) connected to MongoDB.
@@ -15,6 +17,13 @@ This document tracks agents, system modules, and execution status for the T&P Ce
 - **UI Customization Agent**: Implemented `localStorage` persistent UI settings (`fontScale`, `textWrap`, `fontSize`, `uiScale`, `fontFamily`: Inter, Roboto, Outfit, Fira Code, System, `isDemoMode`) applied dynamically to root CSS custom variables.
 
 ## System Components Status
+- [x] Click-Outside Backdrop to Close Modal on all popups (`CsvUploadModal`, `SettingsModal`, `StudentsPage` drive history modal, `DrivesPage` drive inspector modal)
+- [x] Upload Modal Positioned Below Top Navbar with `pt-16 sm:pt-20` and `max-h-[84vh]`
+- [x] Full Screen Modal Overlays Above Navbar (`z-[100]` / `z-[110]`) with Frosted Glass Backdrop Blur (`bg-slate-950/75 backdrop-blur-md`) across all popups
+- [x] Extracted Standalone CSV Upload & Column Mapping Modal Component (`frontend/src/components/datasets/CsvUploadModal.tsx`)
+- [x] Fixed Modal Z-Index Stacking Context: Removed `animate-fade-in` from `<main>` container in `AppLayout.tsx`, adjusted Navbar to `z-30`, and elevated CSV Stepper Modal, Drive History, Inspector, and Settings Modals to `z-[100]` / `z-[110]` so popups never go behind top Navbar.
+- [x] Complete Removal of Static Demo Data when Returning to API Mode (Pure MongoDB REST API State)
+- [x] Refreshed useCallback & useEffect Component Dependencies List Across App Context
 - [x] Configured `.gitignore` files for root (`.gitignore`), backend (`backend/.gitignore`), and frontend (`frontend/.gitignore`)
 - [x] Connected Git Remote Origin `https://github.com/Jayant-Gade/T-P-drives-web-react.git` & pulled `main`
 - [x] Instant Data Re-Sync on Demo Mode Toggle On / Off

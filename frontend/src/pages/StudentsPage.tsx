@@ -198,8 +198,16 @@ export const StudentsPage: React.FC = () => {
 
       {/* Student Drive History Modal */}
       {selectedStudent && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-scale-in">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedStudent(null);
+          }}
+          className="fixed inset-0 z-[100] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in cursor-pointer"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-scale-in cursor-default"
+          >
             <div className="flex justify-between items-center p-6 border-b border-slate-800">
               <div className="flex items-center gap-3">
                 <GraduationCap className="w-6 h-6 text-indigo-400" />
